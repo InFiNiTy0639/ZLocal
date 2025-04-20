@@ -1,0 +1,21 @@
+# API and Web Framework
+fastapi==0.110.1
+uvicorn==0.29.0
+
+# Data Processing
+pandas==2.2.2
+numpy==1.26.4
+
+# Machine Learning
+xgboost==2.0.3
+scikit-learn==1.4.2
+joblib==1.4.0
+
+# HTTP Requests
+requests==2.31.0
+
+# Environment Variables
+python-dotenv==1.0.1
+
+# Optional (if using Jupyter for prototyping)
+jupyterlab==4.1.5
