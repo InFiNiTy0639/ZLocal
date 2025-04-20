@@ -42,9 +42,6 @@ A machine learning-powered platform to **accurately predict delivery times** in 
 
 ```bash
 # Clone repo
-git clone https://github.com/yourname/hyperlocal-eta-optimizer.git
-cd hyperlocal-eta-optimizer
-
 # Create virtual env
 python -m venv venv
 venv\Scripts\activate  # On Windows
