@@ -27,12 +27,12 @@ def get_weather_status(lat, lon, api_key):
         else:
             condition = 'Cloudy'
         
-        print(f"Location: {data.get('name', 'Unknown')}, Country: {data['sys']['country']}")
-        print(f"Weather Description: {data['weather'][0]['description']}")
-        print(f"Temperature (K): {data['main']['temp']}")
-        print(f"Humidity: {humidity}%")
-        print(f"Wind Speed: {wind_speed} m/s")
-        print(f"Custom Condition: {condition}")
+       ## print(f"Location: {data.get('name', 'Unknown')}, Country: {data['sys']['country']}")
+       ## print(f"Weather Description: {data['weather'][0]['description']}")
+       ## print(f"Temperature (K): {data['main']['temp']}")
+       ## print(f"Humidity: {humidity}%")
+       ## print(f"Wind Speed: {wind_speed} m/s")
+       ## print(f"Custom Condition: {condition}")
         
         return condition
 
@@ -40,11 +40,5 @@ def get_weather_status(lat, lon, api_key):
         print(f"Error fetching weather data: {e}")
         return None
 
-# Example usage
-if __name__ == "__main__":
-   
-    latitude = 42.7952
-    longitude = 105.0324
-    api_key = "d291444e97e56fde4c386a80f8b925d4"
-
-    get_weather_status(latitude, longitude, api_key)
+## check usage
+##get_weather_status(latitude, longitude, api_key)
