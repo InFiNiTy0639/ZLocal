@@ -2,8 +2,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from math import radians, sin, cos, sqrt, asin
 from pydantic import BaseModel
-from typing import List, Optional, Dist, Any
-import googlemaps
+from typing import List, Optional, Dict, Any
+import googlemaps  # type: ignore
 from geopy.geocoders import Nominatim
 from cachetools import TTLCache
 import requests
@@ -25,7 +25,7 @@ app = FastAPI(title="DeliveryETA", version="1.0.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],
-    allow_ceredentials=True,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -47,3 +47,17 @@ else:
         gmaps = None
 
 geolocator = Nominatim(user_agent="delivery_eta")
+
+geocode_cache = TTLCache(maxsize=1000, ttl=3600)  # Cache for 1 hour
+directions_cache = TTLCache(maxsize=1000, ttl=3600)
+weather_cache = TTLCache(maxsize=1000, ttl=3600)
+
+try:
+    model = joblib.load("model/xgb_model.pkl")
+    preprocessor = joblib.load("model/preprocessor.pkl")
+    logger.info("Model and preprocessor loaded successfully")
+except Exception as e:
+    logger.warning(f"ML model not found:{e}")
+    model = None
+    preprocessor = None
+    
