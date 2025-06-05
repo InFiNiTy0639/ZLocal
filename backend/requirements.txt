@@ -32,3 +32,7 @@ pydantic==2.5.0
 
 # Caching for API calls
 cachetools==5.5.0
+
+# Visualization
+seaborn==0.13.2
+matplotlib==3.8.4
