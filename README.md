@@ -1,6 +1,8 @@
 # 🚚 Hyperlocal Delivery ETA Optimizer Using Weather & Traffic
 
-A machine learning-powered platform to **accurately predict delivery times** in hyperlocal logistics (like Zomato, Blinkit, etc.) by fusing **Google Maps**, **live weather**, and **historical trip data**.
+[![License](https://img.shields.io/badge/license-Proprietary-red.svg)](#-license)
+
+A machine learning-powered platform to **accurately predict delivery times** in hyperlocal logistics by fusing **Google Maps**, **live weather**, and **historical trip data**.
 
 > 📍 Built for logistics, Q-commerce, and smart urban mobility solutions.
 
@@ -42,12 +44,23 @@ A machine learning-powered platform to **accurately predict delivery times** in 
 
 ```bash
 # Clone repo
-# Create virtual env
-python -m venv venv
-venv\Scripts\activate  # On Windows
+# Create virtual env in backend
+cd backend
+python -m venv venv (git bash)
+source venv\Scripts\activate  # On Windows
 
 # Install dependencies
 pip install -r requirements.txt
 
-# Run the API
-uvicorn src.api.main:app --reload
+#Create Model
+cd backend
+python src/train_model.py
+
+# Run the Backend
+cd backend
+uvicorn src.main:app --reload
+
+# Then
+cd frontend
+npm run dev
+
