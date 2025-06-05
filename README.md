@@ -60,7 +60,3 @@ python src/train_model.py
 cd backend
 uvicorn src.main:app --reload
 
-# Then
-cd frontend
-npm run dev
-
