@@ -19,3 +19,16 @@ python-dotenv==1.0.1
 
 # Optional (if using Jupyter for prototyping)
 jupyterlab==4.1.5
+
+# Geocoding
+geopy==2.4.0
+googlemaps==4.10.0
+
+# For form data handling (e.g., file uploads or POST forms)
+python-multipart==0.0.6
+
+# Data validation and models
+pydantic==2.5.0
+
+# Caching for API calls
+cachetools==5.5.0
