@@ -280,7 +280,7 @@ def predict_eta_ml(
         weather_factor = 1.3 if weather["condition"] in ["stormy", "fog"] else 1.0
         traffic_factor = {"low": 1.0, "medium": 1.2, "high": 1.4, "jam": 1.6}[traffic_density]
         festival_factor = 1.3 if is_festival_day() else 1.0
-        vehicle_factor = {"bicycle": 1.3, "scooter": 1.1, "motorcycle": 1.0}[request.vehicle_type.lower()]
+        vehicle_factor = {"bicycle": 1.3, "scooter": 1.1, "bike": 1.0}[request.vehicle_type.lower()]
         condition_factor = 1.0 + (3 - request.vehicle_condition) * 0.1
         age_factor = 1.0 + max(0, (request.delivery_person_age - 30)) * 0.01
         rating_factor = 1.0 - (request.delivery_person_rating - 3) * 0.05
@@ -356,7 +356,7 @@ async def predict_eta(request: ETARequest):
             raise HTTPException(status_code=400, detail="Invalid delivery coordinates")
         if request.vehicle_condition not in [0, 1, 2, 3]:
             raise HTTPException(status_code=400, detail="Vehicle condition must be 0-3")
-        if request.vehicle_type.lower() not in ["bicycle", "scooter", "motorcycle"]:
+        if request.vehicle_type.lower() not in ["bicycle", "scooter", "bike"]:
             raise HTTPException(status_code=400, detail="Invalid vehicle type")
         if request.multiple_deliveries < 0:
             raise HTTPException(status_code=400, detail="Multiple deliveries must be non-negative")
