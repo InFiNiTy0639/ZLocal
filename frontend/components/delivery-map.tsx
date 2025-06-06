@@ -92,7 +92,7 @@ export const DeliveryMap = memo(function DeliveryMap({
             Route Planning Ready
           </h3>
           <p className="text-gray-600 mb-4">
-            Enter restaurant and delivery locations to see the route and
+            Enter pickup and delivery locations to see the route and
             calculate ETA
           </p>
         </div>
