@@ -179,7 +179,7 @@ export const DeliveryMap = memo(function DeliveryMap({
             <Polyline
               path={path}
               options={{
-                strokeColor: "#90EE90",
+                strokeColor: "#006400",
                 strokeOpacity: 0.8,
                 strokeWeight: 4,
               }}

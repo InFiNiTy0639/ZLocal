@@ -56,11 +56,11 @@ weather_cache = TTLCache(maxsize=1000, ttl=3600)
 
 # Load the ML model and preprocessor
 try:
-    model = joblib.load("model/xgb_model.pkl")
-    preprocessor = joblib.load("model/preprocessor.pkl")
+    model = joblib.load("models/xgb_model.pkl")
+    preprocessor = joblib.load("models/preprocessor.pkl")
     logger.info("Model and preprocessor loaded successfully")
 except Exception as e:
-    logger.warning(f"ML model not found:{e}")
+    logger.warning(f"ML model/Preprocessor not found:{e}")
     model = None
     preprocessor = None
 
