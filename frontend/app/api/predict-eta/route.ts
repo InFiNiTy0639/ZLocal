@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ detail: "Invalid order_time format" }, { status: 400 })
         }
 
-        const backendUrl = process.env.BACKEND_URL || "http://localhost:8000"
+        const backendUrl = process.env.BACKEND_URL || "https://zlocal.onrender.com"
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000);
 
