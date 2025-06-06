@@ -82,7 +82,7 @@ export function LocationInput({
                 setInputValue(address);
                 onLocationSelect(address);
               } else {
-                // console.error("Geocoding failed or address too short");
+                console.error("Geocoding failed or address too short");
                 setInputValue("");
                 onLocationSelect("");
               }
@@ -91,14 +91,14 @@ export function LocationInput({
           );
         },
         (error) => {
-          //   console.error("Error getting location:", error);
+            console.error("Error getting location:", error);
           setInputValue("");
           onLocationSelect("");
           setShowSuggestions(false);
         }
       );
     } else {
-      //   console.error("Geolocation is not supported by this browser.");
+        console.error("Geolocation is not supported by this browser.");
       setInputValue("");
       onLocationSelect("");
       setShowSuggestions(false);
