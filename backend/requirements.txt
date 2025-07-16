@@ -36,3 +36,6 @@ cachetools==5.5.0
 # Visualization
 seaborn==0.13.2
 matplotlib==3.8.4
+
+sqlalchemy==2.0.35
+psycopg2-binary==2.9.9

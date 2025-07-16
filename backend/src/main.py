@@ -14,6 +14,9 @@ import joblib
 from datetime import datetime
 import logging
 from dotenv import load_dotenv
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Boolean
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 
 load_dotenv()
 
@@ -29,6 +32,40 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# Database setup
+DATABASE_URL = os.getenv("DATABASE_URL","postgresql://localdb_mz8d_user:k8pSDJ9tJXQyJXMXAkod2xBd0bGgGx2H@dpg-d1rhl5fdiees73bust0g-a/localdb_mz8d")
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False,autoflush=False,bind=engine)
+Base = declarative_base()
+
+# SQLAlchemy model for trip data
+class Trip(Base):
+    __tablename__ = "trips"
+    id = Column(Integer, primary_key=True, index=True)
+    restaurant_address = Column(String)
+    delivery_address = Column(String)
+    delivery_person_age = Column(Integer)
+    delivery_person_rating = Column(Float)
+    vehicle_type = Column(String)
+    vehicle_condition = Column(Integer)
+    multiple_deliveries = Column(Integer)
+    order_time = Column(DateTime, nullable=True)
+    predicted_eta = Column(Float)
+    google_eta = Column(Float)
+    distance_km = Column(Float)
+    weather_condition = Column(String)
+    temperature = Column(Float)
+    traffic_density = Column(String)
+    is_festival = Column(Boolean)
+    confidence = Column(Float)
+    restaurant_lat = Column(Float)
+    restaurant_lng = Column(Float)
+    delivery_lat = Column(Float)
+    delivery_lng = Column(Float)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+# Create tables
+Base.metadata.create_all(bind=engine)
 
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
 OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY")
@@ -392,6 +429,50 @@ async def predict_eta(request: ETARequest):
         if traffic_density in ["high", "jam"]:
             recommendations.append("Expect delays due to heavy traffic; consider alternative routes.")
         
+                # Save to database
+        db = SessionLocal()
+        try:
+            order_time = None
+            if request.order_time:
+                try:
+                    order_time = datetime.fromisoformat(request.order_time.replace("Z", "+00:00"))
+                except ValueError:
+                    logger.warning(f"Invalid order_time format: {request.order_time}")
+            
+            trip = Trip(
+                restaurant_address=request.restaurant_address,
+                delivery_address=request.delivery_address,
+                delivery_person_age=request.delivery_person_age,
+                delivery_person_rating=request.delivery_person_rating,
+                vehicle_type=request.vehicle_type,
+                vehicle_condition=request.vehicle_condition,
+                multiple_deliveries=request.multiple_deliveries,
+                order_time=order_time,
+                predicted_eta=predicted_eta,
+                google_eta=directions["duration_minutes"],
+                distance_km=directions["distance_km"],
+                weather_condition=weather["condition"],
+                temperature=weather["temperature"],
+                traffic_density=traffic_density,
+                is_festival=is_festival_day(),
+                confidence=confidence,
+                restaurant_lat=restaurant_lat,
+                restaurant_lng=restaurant_lng,
+                delivery_lat=delivery_lat,
+                delivery_lng=delivery_lng
+            )
+            db.add(trip)
+            db.commit()
+            db.refresh(trip)
+            logger.info(f"Saved trip to database with ID: {trip.id}")
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Database error: {e}")
+            raise HTTPException(status_code=500, detail=f"Failed to save to database: {e}")
+        finally:
+            db.close()
+
+            
         return ETAResponse(
             predicted_eta=predicted_eta,
             google_eta=directions["duration_minutes"],
