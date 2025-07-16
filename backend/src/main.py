@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from math import radians, sin, cos, sqrt, asin
 from pydantic import BaseModel
@@ -16,7 +16,7 @@ import logging
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Boolean
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker,Session
 
 load_dotenv()
 
@@ -33,14 +33,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 # Database setup
-DATABASE_URL = os.getenv("DATABASE_URL","postgresql://localdb_mz8d_user:k8pSDJ9tJXQyJXMXAkod2xBd0bGgGx2H@dpg-d1rhl5fdiees73bust0g-a/localdb_mz8d")
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False,autoflush=False,bind=engine)
-Base = declarative_base()
+DATABASE_URL = os.getenv("postgresql://localdb_mz8d_user:k8pSDJ9tJXQyJXMXAkod2xBd0bGgGx2H@dpg-d1rhl5fdiees73bust0g-a/localdb_mz8d")
+if not DATABASE_URL:
+    logger.error("DATABASE_URL not set properly")
+    raise ValueError("DATABASE_URL not set")
+
+try:
+    engine = create_engine(DATABASE_URL, echo=True)  # echo=True for debug logging
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    Base = declarative_base()
+except Exception as e:
+    logger.error(f"Failed to create database engine: {e}")
+    raise
 
 # SQLAlchemy model for trip data
 class Trip(Base):
     __tablename__ = "trips"
+    __table_args__ = {"schema": "public"}
     id = Column(Integer, primary_key=True, index=True)
     restaurant_address = Column(String)
     delivery_address = Column(String)
@@ -64,8 +73,24 @@ class Trip(Base):
     delivery_lng = Column(Float)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-# Create tables
-Base.metadata.create_all(bind=engine)
+# Create tables on startup
+@app.on_event("startup")
+def on_startup():
+    logger.info("Creating database tables...")
+    try:
+        Base.metadata.create_all(bind=engine)
+        logger.info("Table creation completed.")
+    except Exception as e:
+        logger.error(f"Failed to create database tables: {e}")
+        raise
+
+# Dependency to get DB session
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
 OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY")
@@ -429,8 +454,7 @@ async def predict_eta(request: ETARequest):
         if traffic_density in ["high", "jam"]:
             recommendations.append("Expect delays due to heavy traffic; consider alternative routes.")
         
-                # Save to database
-        db = SessionLocal()
+        # Save to database
         try:
             order_time = None
             if request.order_time:
@@ -461,18 +485,16 @@ async def predict_eta(request: ETARequest):
                 delivery_lat=delivery_lat,
                 delivery_lng=delivery_lng
             )
-            db.add(trip)
-            db.commit()
-            db.refresh(trip)
-            logger.info(f"Saved trip to database with ID: {trip.id}")
+            logger.info(f"Attempting to save trip: restaurant={request.restaurant_address}, delivery={request.delivery_address}")
+            db.add(trip) # type: ignore
+            db.commit() # type: ignore
+            db.refresh(trip) # type: ignore
+            logger.info(f"Successfully saved trip with ID: {trip.id}")
         except Exception as e:
-            db.rollback()
+            db.rollback() # type: ignore
             logger.error(f"Database error: {e}")
             raise HTTPException(status_code=500, detail=f"Failed to save to database: {e}")
-        finally:
-            db.close()
-
-            
+        
         return ETAResponse(
             predicted_eta=predicted_eta,
             google_eta=directions["duration_minutes"],
@@ -494,6 +516,22 @@ async def predict_eta(request: ETARequest):
         logger.error(f"Error predicting ETA: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
+@app.get("/trips")
+async def get_trips(db: Session = Depends(get_db)):
+    try:
+        trips = db.query(Trip).all()
+        return [{
+            "id": trip.id,
+            "restaurant_address": trip.restaurant_address,
+            "delivery_address": trip.delivery_address,
+            "predicted_eta": trip.predicted_eta,
+            "google_eta": trip.google_eta,
+            "distance_km": trip.distance_km,
+            "created_at": trip.created_at.isoformat()
+        } for trip in trips]
+    except Exception as e:
+        logger.error(f"Error fetching trips: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch trips")
 if  __name__ == "__main__":
     import uvicorn
     import os
