@@ -33,7 +33,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 # Database setup
-DATABASE_URL = os.getenv("postgresql://localdb_mz8d_user:k8pSDJ9tJXQyJXMXAkod2xBd0bGgGx2H@dpg-d1rhl5fdiees73bust0g-a/localdb_mz8d")
+DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     logger.error("DATABASE_URL not set properly")
     raise ValueError("DATABASE_URL not set")
