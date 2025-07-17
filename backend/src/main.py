@@ -405,7 +405,7 @@ async def health_check():
 
 # ETA endpoint 
 @app.post("/predict-eta", response_model=ETAResponse)
-async def predict_eta(request: ETARequest):
+async def predict_eta(request: ETARequest, db: Session = Depends(get_db)):
     try:
         # Geocode addresses
         restaurant_lat, restaurant_lng = geocode_address(request.restaurant_address)
@@ -442,12 +442,12 @@ async def predict_eta(request: ETARequest):
         
         # Adjust confidence
         eta_diff = abs(predicted_eta - directions["duration_minutes"])
-        if directions["duration_minutes"] > 0:
+        if directions["distance_km"] > 0:
             confidence = max(0.6, min(0.95, confidence - (eta_diff / (directions["distance_km"] * 6))))
         else:
-            confidence = 0.6 # fallback when distance is zero
-            
-        # Prepare recommendations based on weather and traffic
+            confidence = 0.6
+        
+        # Prepare recommendations
         recommendations = []
         if weather["condition"] in ["stormy", "fog"]:
             recommendations.append("Consider delaying delivery due to adverse weather conditions.")
@@ -455,43 +455,43 @@ async def predict_eta(request: ETARequest):
             recommendations.append("Expect delays due to heavy traffic; consider alternative routes.")
         
         # Save to database
+        order_time = None
+        if request.order_time:
+            try:
+                order_time = datetime.fromisoformat(request.order_time.replace("Z", "+00:00"))
+            except ValueError:
+                logger.warning(f"Invalid order_time format: {request.order_time}")
+        
+        trip = Trip(
+            restaurant_address=request.restaurant_address,
+            delivery_address=request.delivery_address,
+            delivery_person_age=request.delivery_person_age,
+            delivery_person_rating=request.delivery_person_rating,
+            vehicle_type=request.vehicle_type,
+            vehicle_condition=request.vehicle_condition,
+            multiple_deliveries=request.multiple_deliveries,
+            order_time=order_time,
+            predicted_eta=predicted_eta,
+            google_eta=directions["duration_minutes"],
+            distance_km=directions["distance_km"],
+            weather_condition=weather["condition"],
+            temperature=weather["temperature"],
+            traffic_density=traffic_density,
+            is_festival=is_festival_day(),
+            confidence=confidence,
+            restaurant_lat=restaurant_lat,
+            restaurant_lng=restaurant_lng,
+            delivery_lat=delivery_lat,
+            delivery_lng=delivery_lng
+        )
+        logger.info(f"Attempting to save trip: restaurant={request.restaurant_address}, delivery={request.delivery_address}")
         try:
-            order_time = None
-            if request.order_time:
-                try:
-                    order_time = datetime.fromisoformat(request.order_time.replace("Z", "+00:00"))
-                except ValueError:
-                    logger.warning(f"Invalid order_time format: {request.order_time}")
-            
-            trip = Trip(
-                restaurant_address=request.restaurant_address,
-                delivery_address=request.delivery_address,
-                delivery_person_age=request.delivery_person_age,
-                delivery_person_rating=request.delivery_person_rating,
-                vehicle_type=request.vehicle_type,
-                vehicle_condition=request.vehicle_condition,
-                multiple_deliveries=request.multiple_deliveries,
-                order_time=order_time,
-                predicted_eta=predicted_eta,
-                google_eta=directions["duration_minutes"],
-                distance_km=directions["distance_km"],
-                weather_condition=weather["condition"],
-                temperature=weather["temperature"],
-                traffic_density=traffic_density,
-                is_festival=is_festival_day(),
-                confidence=confidence,
-                restaurant_lat=restaurant_lat,
-                restaurant_lng=restaurant_lng,
-                delivery_lat=delivery_lat,
-                delivery_lng=delivery_lng
-            )
-            logger.info(f"Attempting to save trip: restaurant={request.restaurant_address}, delivery={request.delivery_address}")
-            db.add(trip) # type: ignore
-            db.commit() # type: ignore
-            db.refresh(trip) # type: ignore
+            db.add(trip)
+            db.commit()
+            db.refresh(trip)
             logger.info(f"Successfully saved trip with ID: {trip.id}")
         except Exception as e:
-            db.rollback() # type: ignore
+            db.rollback()
             logger.error(f"Database error: {e}")
             raise HTTPException(status_code=500, detail=f"Failed to save to database: {e}")
         
@@ -532,8 +532,8 @@ async def get_trips(db: Session = Depends(get_db)):
     except Exception as e:
         logger.error(f"Error fetching trips: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch trips")
+
 if  __name__ == "__main__":
     import uvicorn
-    import os
     port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app,host="0.0.0.0",port=port)
+    uvicorn.run(app, host="0.0.0.0", port=port)
