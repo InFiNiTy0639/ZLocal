@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from math import radians, sin, cos, sqrt, asin
 from pydantic import BaseModel
@@ -14,6 +14,9 @@ import joblib
 from datetime import datetime
 import logging
 from dotenv import load_dotenv
+from sqlalchemy.orm import Session
+from .database import SessionLocal, get_db, Base, engine
+from .models import DeliveryETA
 
 load_dotenv()
 
@@ -325,6 +328,11 @@ def predict_eta_ml(
         logger.info(f"Fallback ETA (after ML error): {base_time:.1f} minutes")
         return max(1, min(base_time, 60)), 0.6
 
+# Initialize database tables on startup
+@app.on_event("startup")
+def on_startup():
+    Base.metadata.create_all(bind=engine)
+
 # FastAPI routes
 @app.get("/")
 async def root():
@@ -343,7 +351,7 @@ async def health_check():
 
 # ETA endpoint 
 @app.post("/predict-eta", response_model=ETAResponse)
-async def predict_eta(request: ETARequest):
+async def predict_eta(request: ETARequest,db:Session = Depends(get_db)):
     try:
         # Geocode addresses
         restaurant_lat, restaurant_lng = geocode_address(request.restaurant_address)
@@ -391,6 +399,37 @@ async def predict_eta(request: ETARequest):
             recommendations.append("Consider delaying delivery due to adverse weather conditions.")
         if traffic_density in ["high", "jam"]:
             recommendations.append("Expect delays due to heavy traffic; consider alternative routes.")
+        
+        # Save to database
+        order_time = None
+        if request.order_time:
+            try:
+                order_time = datetime.fromisoformat(request.order_time.replace("Z", "+00:00"))
+            except ValueError:
+                logger.warning(f"Invalid order_time format for database: {request.order_time}")
+        
+        db_entry = DeliveryETA(
+            restaurant_address=request.restaurant_address,
+            delivery_address=request.delivery_address,
+            delivery_person_age=request.delivery_person_age,
+            delivery_person_rating=request.delivery_person_rating,
+            vehicle_type=request.vehicle_type.lower(),
+            vehicle_condition=request.vehicle_condition,
+            multiple_deliveries=request.multiple_deliveries,
+            order_time=order_time,
+            predicted_eta=predicted_eta,
+            google_eta=directions["duration_minutes"],
+            distance_km=directions["distance_km"],
+            weather_condition=weather["condition"],
+            weather_temperature=weather["temperature"],
+            traffic_density=traffic_density,
+            is_festival=is_festival_day(),
+            confidence=confidence
+        )
+        db.add(db_entry)
+        db.commit()
+        db.refresh(db_entry)
+        logger.info(f"Saved delivery ETA to database with ID: {db_entry.id}")
         
         return ETAResponse(
             predicted_eta=predicted_eta,
