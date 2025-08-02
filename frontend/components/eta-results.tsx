@@ -14,6 +14,7 @@ import {
 
 interface ETAResultsProps {
   results: {
+    id:number;
     predicted_eta: number;
     google_eta: number;
     distance_km: number;
@@ -63,6 +64,7 @@ export const ETAResults = memo(function ETAResults({
 }: ETAResultsProps) {
   // Validate results
   const validatedResults = {
+    id: typeof results.id === "number" && results.id > 0 ? results.id : 0,
     predicted_eta:
       isFinite(results.predicted_eta) && results.predicted_eta > 0
         ? results.predicted_eta
