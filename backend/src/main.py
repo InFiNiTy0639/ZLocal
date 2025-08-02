@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from math import radians, sin, cos, sqrt, asin
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
-import googlemaps  # type: ignore
+import googlemaps # pyright: ignore[reportMissingImports]
 from geopy.geocoders import Nominatim
 from cachetools import TTLCache
 import requests
@@ -14,12 +14,54 @@ import joblib
 from datetime import datetime
 import logging
 from dotenv import load_dotenv
-from sqlalchemy.orm import Session
-from .database import get_db, Base, engine
-from .models import DeliveryETA
+from sqlalchemy import create_engine, Column, Integer, Float, String, DateTime, Boolean
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.sql import func
 
 load_dotenv()
 
+# Database Configuration
+DATABASE_URL = os.getenv("DATABASE_URL")
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL environment variable is not set")
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# Database Model
+class DeliveryETA(Base):
+    __tablename__ = "delivery_eta"
+
+    id = Column(Integer, primary_key=True, index=True)
+    restaurant_address = Column(String)
+    delivery_address = Column(String)
+    delivery_person_age = Column(Integer)
+    delivery_person_rating = Column(Float)
+    vehicle_type = Column(String)
+    vehicle_condition = Column(Integer)
+    multiple_deliveries = Column(Integer)
+    order_time = Column(DateTime, nullable=True)
+    predicted_eta = Column(Float)
+    google_eta = Column(Float)
+    distance_km = Column(Float)
+    weather_condition = Column(String)
+    weather_temperature = Column(Float)
+    traffic_density = Column(String)
+    is_festival = Column(Boolean)
+    confidence = Column(Float)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -358,6 +400,7 @@ async def predict_eta(request: ETARequest,db:Session = Depends(get_db)):
         delivery_lat, delivery_lng = geocode_address(request.delivery_address)
         
         # Validate inputs
+
         if not (-90 <= restaurant_lat <= 90 and -180 <= restaurant_lng <= 180):
             raise HTTPException(status_code=400, detail="Invalid pickup coordinates")
         if not (-90 <= delivery_lat <= 90 and -180 <= delivery_lng <= 180):
