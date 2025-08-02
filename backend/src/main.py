@@ -15,7 +15,7 @@ from datetime import datetime
 import logging
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
-from .database import SessionLocal, get_db, Base, engine
+from .database import get_db, Base, engine
 from .models import DeliveryETA
 
 load_dotenv()
