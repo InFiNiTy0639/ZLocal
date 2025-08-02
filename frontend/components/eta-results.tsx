@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from "react";
-import { Card, CardContent} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Clock,
@@ -10,11 +10,12 @@ import {
   Car,
   Calendar,
   TrendingUp,
+  Hash,
 } from "lucide-react";
 
 interface ETAResultsProps {
   results: {
-    id:number;
+    id: number;
     predicted_eta: number;
     google_eta: number;
     distance_km: number;
@@ -102,25 +103,35 @@ export const ETAResults = memo(function ETAResults({
       typeof results.route_polyline === "string" ? results.route_polyline : "",
   };
 
-    return (
+  return (
     <Card className="w-full">
       <CardContent className="p-4 md:p-6">
         <div className="flex items-center space-x-2 mb-4">
           <Clock className="h-5 w-5 text-gray-600" />
-          <span className="font-semibold text-gray-900">Delivery Time Prediction</span>
+          <span className="font-semibold text-gray-900">
+            Delivery Time Prediction
+          </span>
         </div>
-        
+
         {/* Mobile: Stack vertically, Desktop: Horizontal layout */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-6">
           {/* ETA Section */}
           <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
             <div className="text-center p-3 md:p-4 bg-blue-50 rounded-lg min-w-[120px]">
-              <div className="text-xl md:text-2xl font-bold text-blue-600">{formatTime(validatedResults.predicted_eta)}</div>
-              <div className="text-xs md:text-sm text-blue-600 font-medium">Predicted Time</div>
+              <div className="text-xl md:text-2xl font-bold text-blue-600">
+                {formatTime(validatedResults.predicted_eta)}
+              </div>
+              <div className="text-xs md:text-sm text-blue-600 font-medium">
+                Predicted Time
+              </div>
             </div>
             <div className="text-center p-3 md:p-4 bg-gray-50 rounded-lg min-w-[120px]">
-              <div className="text-xl md:text-2xl font-bold text-gray-600">{formatTime(validatedResults.google_eta)}</div>
-              <div className="text-xs md:text-sm text-gray-600 font-medium">Google Maps</div>
+              <div className="text-xl md:text-2xl font-bold text-gray-600">
+                {formatTime(validatedResults.google_eta)}
+              </div>
+              <div className="text-xs md:text-sm text-gray-600 font-medium">
+                Google Maps
+              </div>
             </div>
           </div>
 
@@ -130,7 +141,9 @@ export const ETAResults = memo(function ETAResults({
             <div className="flex flex-col items-center space-y-1 px-2 md:px-4 py-2 bg-gray-50 rounded-lg">
               <MapPin className="h-4 w-4 text-gray-600" />
               <span className="text-xs font-medium text-center">Distance</span>
-              <span className="text-xs md:text-sm font-semibold">{validatedResults.distance_km.toFixed(2)} km</span>
+              <span className="text-xs md:text-sm font-semibold">
+                {validatedResults.distance_km.toFixed(2)} km
+              </span>
             </div>
 
             {/* Weather */}
@@ -138,16 +151,25 @@ export const ETAResults = memo(function ETAResults({
               <Thermometer className="h-4 w-4 text-blue-600" />
               <span className="text-xs font-medium text-center">Weather</span>
               <div className="text-center">
-                <div className="text-xs md:text-sm font-semibold">{validatedResults.weather.temperature}°C</div>
-                <div className="text-xs text-gray-600 capitalize truncate">{validatedResults.weather.condition}</div>
+                <div className="text-xs md:text-sm font-semibold">
+                  {validatedResults.weather.temperature}°C
+                </div>
+                <div className="text-xs text-gray-600 capitalize truncate">
+                  {validatedResults.weather.condition}
+                </div>
               </div>
             </div>
 
             {/* Traffic */}
             <div className="flex flex-col items-center space-y-1 px-2 md:px-4 py-2 bg-gray-50 rounded-lg">
               <Car className="h-4 w-4 text-gray-600" />
-              <span className="text-xs font-medium text-center mb-1">Traffic</span>
-              <Badge variant={getTrafficVariant(validatedResults.traffic_density)} className="text-xs">
+              <span className="text-xs font-medium text-center mb-1">
+                Traffic
+              </span>
+              <Badge
+                variant={getTrafficVariant(validatedResults.traffic_density)}
+                className="text-xs"
+              >
                 {validatedResults.traffic_density}
               </Badge>
             </div>
@@ -155,17 +177,38 @@ export const ETAResults = memo(function ETAResults({
             {/* Festival Day */}
             <div className="flex flex-col items-center space-y-1 px-2 md:px-4 py-2 bg-gray-50 rounded-lg">
               <Calendar className="h-4 w-4 text-gray-600" />
-              <span className="text-xs font-medium text-center mb-1">Festival</span>
-              <Badge variant={validatedResults.is_festival ? "destructive" : "secondary"} className="text-xs">
+              <span className="text-xs font-medium text-center mb-1">
+                Festival
+              </span>
+              <Badge
+                variant={
+                  validatedResults.is_festival ? "destructive" : "secondary"
+                }
+                className="text-xs"
+              >
                 {validatedResults.is_festival ? "Yes" : "No"}
               </Badge>
             </div>
-
+            <div className="flex flex-col items-center space-y-1 px-2 md:px-4 py-2 bg-gray-50 rounded-lg">
+              <Hash className="h-4 w-4 text-gray-600" />
+              <span className="text-xs font-medium text-center">
+                Request ID
+              </span>
+              <span className="text-xs md:Text-sm font-semibold">
+                {validatedResults.id || "N/A"}
+              </span>
+            </div>
             {/* Confidence */}
             <div className="flex flex-col items-center space-y-1 px-2 md:px-4 py-2 bg-gray-50 rounded-lg col-span-2 md:col-span-1">
               <TrendingUp className="h-4 w-4 text-gray-600" />
-              <span className="text-xs font-medium text-center">Confidence</span>
-              <span className={`text-xs md:text-sm font-semibold ${getConfidenceColor(validatedResults.confidence)}`}>
+              <span className="text-xs font-medium text-center">
+                Confidence
+              </span>
+              <span
+                className={`text-xs md:text-sm font-semibold ${getConfidenceColor(
+                  validatedResults.confidence
+                )}`}
+              >
                 {(validatedResults.confidence * 100).toFixed(1)}%
               </span>
             </div>
@@ -175,8 +218,9 @@ export const ETAResults = memo(function ETAResults({
         {/* Note */}
         <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
           <p className="text-xs text-yellow-800">
-            <strong>Note:</strong> ETA predictions consider real-time weather, traffic, and delivery person factors.
-            Actual delivery times may vary based on unforeseen circumstances.
+            <strong>Note:</strong> ETA predictions consider real-time weather,
+            traffic, and delivery person factors. Actual delivery times may vary
+            based on unforeseen circumstances.
           </p>
         </div>
       </CardContent>

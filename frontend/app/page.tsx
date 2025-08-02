@@ -30,6 +30,7 @@ interface DeliveryFormData {
 }
 
 interface ETAResponse {
+  id: number;
   predicted_eta: number;
   google_eta: number;
   distance_km: number;
@@ -132,9 +133,13 @@ export default function DeliveryETAPage() {
         const errorData = await response.json();
         throw new Error(errorData.detail || "Failed to calculate ETA");
       }
-
       const results = await response.json();
       console.log("ETA Results:", results);
+      // Ensure 'id' exists, fallback to a timestamp if missing
+      setEtaResults({
+        id: results.id ?? Date.now(),
+        ...results,
+      });
       setEtaResults(results);
     } catch (err) {
       console.error("Error calculating ETA:", err);
